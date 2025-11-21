@@ -28,6 +28,16 @@ public class FoodDto {
     private int price;
 
     /**
+     * Current Average Rating
+     */
+    private Double rating;
+
+    /**
+     * Total number of ratings
+     */
+    private Integer numberOfRatings;
+
+    /**
      * List representing allergies associated with the food
      */
     private List<String> allergies = new ArrayList<>();
@@ -41,15 +51,17 @@ public class FoodDto {
 
     /**
      * Constructor with params
+     * * Note: We do not include rating/numberOfRatings here because 
+     * new items always start at 0.
      *
      * @param name
-     *            Name of food
+     * Name of food
      * @param amount
-     *            The amount of the food
+     * The amount of the food
      * @param price
-     *            The price of the food
+     * The price of the food
      * @param allergies
-     *            The allergies associated with the food
+     * The allergies associated with the food
      */
     public FoodDto ( final String name, final int amount, final int price, final List<String> allergies ) {
         super();
@@ -57,8 +69,10 @@ public class FoodDto {
         this.amount = amount;
         this.price = price;
         this.allergies = new ArrayList<>();
-        for ( final String allergy : allergies ) {
-            this.allergies.add( allergy.toUpperCase() );
+        if (allergies != null) {
+            for ( final String allergy : allergies ) {
+                this.allergies.add( allergy.toUpperCase() );
+            }
         }
     }
 
@@ -75,7 +89,7 @@ public class FoodDto {
      * Sets the food name to @param name
      *
      * @param name
-     *            The name to set
+     * The name to set
      */
     public void setFoodName ( final String name ) {
         this.foodName = name;
@@ -94,7 +108,7 @@ public class FoodDto {
      * Sets the amount field to @param amount
      *
      * @param amount
-     *            The amount to set
+     * The amount to set
      */
     public void setAmount ( final int amount ) {
         this.amount = amount;
@@ -113,7 +127,7 @@ public class FoodDto {
      * Sets the price field to @param price
      *
      * @param price
-     *            The price to set
+     * The price to set
      */
     public void setPrice ( final int price ) {
         this.price = price;
@@ -132,7 +146,7 @@ public class FoodDto {
      * Sets the allergies list to @param allergies
      *
      * @param allergies
-     *            The allergies to set
+     * The allergies to set
      */
     public void setAllergies ( final List<String> allergies ) {
         this.allergies = allergies;
@@ -151,9 +165,27 @@ public class FoodDto {
      * Set Id to @param id
      *
      * @param id
-     *            The id to set
+     * The id to set
      */
     public void setId ( final Long id ) {
         this.id = id;
+    }
+
+    // --- NEW GETTERS AND SETTERS ---
+
+    public Double getRating() {
+        return rating;
+    }
+
+    public void setRating(Double rating) {
+        this.rating = rating;
+    }
+
+    public Integer getNumberOfRatings() {
+        return numberOfRatings;
+    }
+
+    public void setNumberOfRatings(Integer numberOfRatings) {
+        this.numberOfRatings = numberOfRatings;
     }
 }

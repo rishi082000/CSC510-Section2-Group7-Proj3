@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam; // Added this import
 import org.springframework.web.bind.annotation.RestController;
 
 import FoodSeer.dto.FoodDto;
@@ -35,7 +36,7 @@ public class FoodController {
      * Gets the food based on the ID parameter
      *
      * @param id
-     *            The ID of the food to return
+     * The ID of the food to return
      * @return The food
      */
     @GetMapping ( "{id}" )
@@ -48,7 +49,7 @@ public class FoodController {
      * POST mapping to create a food
      *
      * @param foodDto
-     *            The food DTO to create
+     * The food DTO to create
      * @return response from creation
      */
     @PostMapping
@@ -80,7 +81,7 @@ public class FoodController {
      * Deletes the food based on params
      *
      * @param foodId
-     *            Id of the food to delete
+     * Id of the food to delete
      * @return Response Entity
      */
     @DeleteMapping ( "{id}" )
@@ -98,7 +99,7 @@ public class FoodController {
      * Updates an existing food's details (amount, price, and allergies).
      *
      * @param foodDto
-     *            FoodDto containing the updated fields
+     * FoodDto containing the updated fields
      * @return ResponseEntity containing the updated FoodDto
      */
     @PostMapping ( "/updateFood" )
@@ -130,5 +131,35 @@ public class FoodController {
         return ResponseEntity.ok(updatedFood);
     }
 
+    // --- NEW METHOD ---
+
+    /**
+     * Rates a food item within a specific order context.
+     * Endpoint: POST /api/foods/orders/{orderId}/{foodId}/rate?rating=5.0
+     *
+     * @param orderId The ID of the order
+     * @param foodId The ID of the food
+     * @param rating The rating value (0-5)
+     * @return The updated FoodDto with new average
+     */
+    @PostMapping("/orders/{orderId}/{foodId}/rate")
+    public ResponseEntity<?> rateFood(
+            @PathVariable final Long orderId,
+            @PathVariable final Long foodId,
+            @RequestParam final Double rating) {
+        
+        try {
+            final FoodDto updatedFood = foodService.rateFoodInOrder(orderId, foodId, rating);
+            return ResponseEntity.ok(updatedFood);
+        } catch (final IllegalStateException e) {
+            // Returns 409 Conflict if order is not fulfilled
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (final IllegalArgumentException e) {
+            // Returns 400 Bad Request if food is not in order or invalid rating
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (final Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while rating the food.");
+        }
+    }
 
 }
