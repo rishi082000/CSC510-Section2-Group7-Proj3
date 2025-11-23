@@ -288,6 +288,7 @@ const InventoryManagement = () => {
                 <th>Name</th>
                 <th>Price</th>
                 <th>Stock</th>
+                <th>Rating</th> {/* Added Rating Column Header */}
                 <th>Allergies</th>
                 <th>Actions</th>
               </tr>
@@ -302,6 +303,19 @@ const InventoryManagement = () => {
                     <span className={food.amount > 0 ? 'stock-positive' : 'stock-zero'}>
                       {food.amount}
                     </span>
+                  </td>
+                  {/* Added Rating Column Data */}
+                  <td>
+                    {food.rating > 0 ? (
+                        <span style={{ whiteSpace: 'nowrap' }}>
+                            <span style={{ color: '#f1c40f' }}>⭐</span> {food.rating.toFixed(1)} 
+                            <span style={{ fontSize: '0.85em', color: '#777', marginLeft: '4px' }}>
+                                ({food.numberOfRatings})
+                            </span>
+                        </span>
+                    ) : (
+                        <span style={{ color: '#ccc', fontStyle: 'italic' }}>No ratings</span>
+                    )}
                   </td>
                   <td>{food.allergies && food.allergies.length > 0 ? food.allergies.join(', ') : 'None'}</td>
                   <td className="actions-cell">
@@ -329,4 +343,3 @@ const InventoryManagement = () => {
 };
 
 export default InventoryManagement;
-
