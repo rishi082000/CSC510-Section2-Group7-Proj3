@@ -2512,3 +2512,23 @@ code {
 .food-item-info .rating-display {
   margin-top: 4px;
 }
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+
+.chart-container {
+  width: 100%;
+  height: 450px;
+}
+
+.full-width {
+  grid-column: span 2;
+}
+
+
+
+
+
