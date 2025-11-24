@@ -12,6 +12,8 @@ import InventoryManagement from './pages/InventoryManagement';
 import UserManagement from './pages/UserManagement';
 import Chatbot from './pages/Chatbot';
 import Quiz from './pages/Quiz';
+import AdminRoute from './components/AdminRoute';
+import Dashboard from './pages/Dashboard';
 import Navigation from './components/Navigation';
 import { isAuthenticated } from './services/api';
 
@@ -80,6 +82,17 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          <Route
+            path="/dashboard"
+            element={
+              <AdminRoute>
+                <AppLayout>
+                  <Dashboard />
+                </AppLayout>
+              </AdminRoute>
+            }
+          />
+          
           <Route 
             path="/inventory" 
             element={
