@@ -16,9 +16,8 @@ const CreateOrder = () => {
   useEffect(() => {
     const fetchFoods = async () => {
       try {
-        await getCurrentUser(); // Verify authentication
+        await getCurrentUser();
         const foodsData = await getAllFoods();
-        // Only show foods that are in stock
         setFoods(foodsData.filter(food => food.amount > 0));
       } catch (error) {
         console.error('Error fetching foods:', error);
@@ -35,12 +34,9 @@ const CreateOrder = () => {
   useEffect(() => {
     if (location.state?.addToCart && foods.length > 0) {
       const recommendedFood = location.state.addToCart;
-      
-      // Check if the food is in stock
       const foodInStock = foods.find(f => f.id === recommendedFood.id);
       
       if (foodInStock) {
-        // Add to cart
         setCart(prev => ({
           ...prev,
           [foodInStock.id]: {
@@ -48,17 +44,12 @@ const CreateOrder = () => {
             quantity: (prev[foodInStock.id]?.quantity || 0) + 1
           }
         }));
-        
-        // Show notification
         setNotification(`✅ ${foodInStock.foodName} has been added to your cart!`);
         setTimeout(() => setNotification(null), 5000);
       } else {
-        // Show out of stock notification
         setNotification(`⚠️ Sorry, ${recommendedFood.foodName} is currently out of stock.`);
         setTimeout(() => setNotification(null), 5000);
       }
-      
-      // Clear the state to prevent re-adding on re-render
       window.history.replaceState({}, document.title);
     }
   }, [location.state, foods]);
@@ -66,10 +57,7 @@ const CreateOrder = () => {
   const addToCart = (food) => {
     setCart(prev => ({
       ...prev,
-      [food.id]: {
-        food,
-        quantity: (prev[food.id]?.quantity || 0) + 1
-      }
+      [food.id]: { food, quantity: (prev[food.id]?.quantity || 0) + 1 }
     }));
   };
 
@@ -85,20 +73,14 @@ const CreateOrder = () => {
     });
   };
 
-  const clearCart = () => {
-    setCart({});
-  };
+  const clearCart = () => { setCart({}); };
 
   const getTotalPrice = () => {
-    return Object.values(cart).reduce((total, item) => {
-      return total + (item.food.price * item.quantity);
-    }, 0);
+    return Object.values(cart).reduce((total, item) => total + (item.food.price * item.quantity), 0);
   };
 
   const getTotalItems = () => {
-    return Object.values(cart).reduce((total, item) => {
-      return total + item.quantity;
-    }, 0);
+    return Object.values(cart).reduce((total, item) => total + item.quantity, 0);
   };
 
   const handleSubmitOrder = async () => {
@@ -106,7 +88,6 @@ const CreateOrder = () => {
       alert('Please add items to your cart before placing an order.');
       return;
     }
-
     if (!orderName.trim()) {
       alert('Please enter a name for your order.');
       return;
@@ -114,18 +95,10 @@ const CreateOrder = () => {
 
     setSubmitting(true);
     try {
-      // Prepare order data - send foods with only id field for backend processing
       const orderFoods = Object.values(cart).flatMap(item => 
         Array(item.quantity).fill({ id: item.food.id })
       );
-
-      const orderData = {
-        name: orderName,
-        foods: orderFoods,
-        isFulfilled: false
-      };
-
-      console.log('Sending order data:', orderData); // Debug log
+      const orderData = { name: orderName, foods: orderFoods, isFulfilled: false };
       await createOrder(orderData);
       alert('Order placed successfully!');
       navigate('/orders');
@@ -141,28 +114,29 @@ const CreateOrder = () => {
     food.foodName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) {
+  // --- HELPER: Render Stars ---
+  const renderStars = (rating) => {
     return (
-      <div className="create-order-container">
-        <div className="loading">Loading...</div>
-      </div>
+      <span style={{ marginRight: '5px' }}>
+        {[1, 2, 3, 4, 5].map(star => (
+          <span key={star} style={{ color: rating >= star ? '#f1c40f' : '#e0e0e0', fontSize: '1rem' }}>
+            ★
+          </span>
+        ))}
+      </span>
     );
-  }
+  };
+
+  if (loading) return <div className="create-order-container"><div className="loading">Loading...</div></div>;
 
   return (
     <div className="create-order-container">
       <div className="create-order-header">
         <h1>🛒 Create New Order</h1>
-        <button className="back-button" onClick={() => navigate('/recommendations')}>
-          Back
-        </button>
+        <button className="back-button" onClick={() => navigate('/recommendations')}>Back</button>
       </div>
 
-      {notification && (
-        <div className="notification-banner">
-          {notification}
-        </div>
-      )}
+      {notification && <div className="notification-banner">{notification}</div>}
 
       <div className="order-content">
         <div className="foods-section">
@@ -183,17 +157,43 @@ const CreateOrder = () => {
             <div className="foods-list">
               {filteredFoods.map(food => (
                 <div key={food.id} className="food-item">
-                  <div className="food-item-info">
-                    <h3>{food.foodName}</h3>
-                    <p>Price: ${food.price} | Stock: {food.amount}</p>
-                    {food.allergies && food.allergies.length > 0 && (
-                      <p className="allergies-text">Allergies: {food.allergies.join(', ')}</p>
-                    )}
+                  <div className="food-item-info" style={{ width: '100%' }}>
+                    
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                        <h3 style={{ margin: 0 }}>{food.foodName}</h3>
+                        <span style={{ fontWeight: 'bold', color: '#2ecc71', fontSize: '1.1rem', backgroundColor: '#e8f8f5', padding: '2px 8px', borderRadius: '4px' }}>
+                            ${food.price}
+                        </span>
+                    </div>
+
+                    {/* CORRECTED RATING ROW */}
+                    <div className="food-rating-row" style={{ marginBottom: '8px', fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>
+                         {food.rating > 0 ? (
+                             <>
+                                {renderStars(food.rating)}
+                                <strong style={{ marginRight: '5px' }}>{food.rating.toFixed(1)}</strong>
+                                <span style={{ color: '#7f8c8d', fontSize: '0.85rem' }}>({food.numberOfRatings})</span>
+                             </>
+                         ) : (
+                             <span style={{ color: '#95a5a6', fontStyle: 'italic' }}>No ratings yet</span>
+                         )}
+                    </div>
+
+                    <div style={{ fontSize: '0.85rem', color: '#666' }}>
+                        <p style={{ margin: '2px 0' }}>Stock: {food.amount} available</p>
+                        {food.allergies && food.allergies.length > 0 && (
+                            <p className="allergies-text" style={{ margin: '2px 0', color: '#e74c3c' }}>
+                                Allergies: {food.allergies.join(', ')}
+                            </p>
+                        )}
+                    </div>
                   </div>
+                  
                   <button
                     className="add-button"
                     onClick={() => addToCart(food)}
                     disabled={cart[food.id]?.quantity >= food.amount}
+                    style={{ marginTop: '10px', width: '100%' }}
                   >
                     Add to Cart
                   </button>
@@ -205,17 +205,9 @@ const CreateOrder = () => {
 
         <div className="cart-section">
           <h2>Your Cart</h2>
-          
           <div className="order-name-input">
             <label htmlFor="orderName">Order Name:</label>
-            <input
-              type="text"
-              id="orderName"
-              placeholder="e.g., Lunch Order"
-              value={orderName}
-              onChange={(e) => setOrderName(e.target.value)}
-              className="text-input"
-            />
+            <input type="text" id="orderName" placeholder="e.g., Lunch Order" value={orderName} onChange={(e) => setOrderName(e.target.value)} className="text-input" />
           </div>
 
           {getTotalItems() === 0 ? (
@@ -227,54 +219,23 @@ const CreateOrder = () => {
                   <div key={item.food.id} className="cart-item">
                     <div className="cart-item-info">
                       <h4>{item.food.foodName}</h4>
-                      <p>
-                        ${item.food.price} × {item.quantity} = ${item.food.price * item.quantity}
-                      </p>
+                      <p>${item.food.price} × {item.quantity} = ${item.food.price * item.quantity}</p>
                     </div>
                     <div className="cart-item-actions">
-                      <button
-                        className="quantity-button"
-                        onClick={() => removeFromCart(item.food.id)}
-                      >
-                        -
-                      </button>
+                      <button className="quantity-button" onClick={() => removeFromCart(item.food.id)}>-</button>
                       <span className="quantity">{item.quantity}</span>
-                      <button
-                        className="quantity-button"
-                        onClick={() => addToCart(item.food)}
-                        disabled={item.quantity >= item.food.amount}
-                      >
-                        +
-                      </button>
+                      <button className="quantity-button" onClick={() => addToCart(item.food)} disabled={item.quantity >= item.food.amount}>+</button>
                     </div>
                   </div>
                 ))}
               </div>
-
               <div className="cart-summary">
-                <div className="summary-row">
-                  <span>Total Items:</span>
-                  <span>{getTotalItems()}</span>
-                </div>
-                <div className="summary-row total">
-                  <span>Total Price:</span>
-                  <span>${getTotalPrice()}</span>
-                </div>
+                <div className="summary-row"><span>Total Items:</span><span>{getTotalItems()}</span></div>
+                <div className="summary-row total"><span>Total Price:</span><span>${getTotalPrice()}</span></div>
               </div>
-
               <div className="cart-actions">
-                <button
-                  className="clear-button"
-                  onClick={clearCart}
-                  disabled={submitting}
-                >
-                  Clear Cart
-                </button>
-                <button
-                  className="submit-button"
-                  onClick={handleSubmitOrder}
-                  disabled={submitting || !orderName.trim()}
-                >
+                <button className="clear-button" onClick={clearCart} disabled={submitting}>Clear Cart</button>
+                <button className="submit-button" onClick={handleSubmitOrder} disabled={submitting || !orderName.trim()}>
                   {submitting ? 'Placing Order...' : 'Place Order'}
                 </button>
               </div>
@@ -287,4 +248,3 @@ const CreateOrder = () => {
 };
 
 export default CreateOrder;
-

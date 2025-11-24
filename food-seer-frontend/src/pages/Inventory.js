@@ -7,7 +7,7 @@ const Inventory = () => {
   const [filteredFoods, setFilteredFoods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('name'); // name, price, amount
+  const [sortBy, setSortBy] = useState('name'); // name, price, amount, rating
   const [filterInStock, setFilterInStock] = useState(false);
   const navigate = useNavigate();
 
@@ -53,6 +53,10 @@ const Inventory = () => {
           return a.price - b.price;
         case 'amount':
           return b.amount - a.amount;
+        case 'rating':
+          const ratingA = a.rating || -1;
+          const ratingB = b.rating || -1;
+          return ratingB - ratingA;
         default:
           return 0;
       }
@@ -67,6 +71,30 @@ const Inventory = () => {
 
   const handleCreateOrder = () => {
     navigate('/create-order');
+  };
+
+  // --- HELPER: Dynamic Star Rendering ---
+  const renderStars = (rating) => {
+    const totalStars = 5;
+    return (
+      <span style={{ marginRight: '5px' }}>
+        {[...Array(totalStars)].map((_, index) => {
+          const starValue = index + 1;
+          // Logic: Gold if full star, Grey if empty
+          // For 4.5, we can just color based on threshold or show half
+          // Simple solid star approach:
+          const color = rating >= starValue ? '#f1c40f' : '#e0e0e0';
+          
+          // Optional: Handle half-star visually if you want distinction
+          // For now, simple filled/unfilled logic:
+          return (
+            <span key={index} style={{ color: color, fontSize: '1.1rem' }}>
+              ★
+            </span>
+          );
+        })}
+      </span>
+    );
   };
 
   if (loading) {
@@ -120,6 +148,7 @@ const Inventory = () => {
             <option value="name">Sort by Name</option>
             <option value="price">Sort by Price</option>
             <option value="amount">Sort by Stock</option>
+            <option value="rating">Sort by Rating</option>
           </select>
         </div>
       </div>
@@ -142,10 +171,24 @@ const Inventory = () => {
                   {food.amount > 0 ? 'In Stock' : 'Out of Stock'}
                 </span>
               </div>
+
+              {/* --- CORRECTED RATING DISPLAY --- */}
+              <div className="food-rating-section" style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #eee' }}>
+                 {food.rating > 0 ? (
+                     <div style={{ display: 'flex', alignItems: 'center' }}>
+                         {renderStars(food.rating)}
+                         <span style={{ fontWeight: 'bold', color: '#333' }}>{food.rating.toFixed(1)}</span>
+                         <span style={{ fontSize: '0.85rem', color: '#7f8c8d', marginLeft: '5px' }}>({food.numberOfRatings} reviews)</span>
+                     </div>
+                 ) : (
+                     <span style={{ fontSize: '0.9rem', color: '#95a5a6', fontStyle: 'italic' }}>No ratings yet</span>
+                 )}
+              </div>
+
               <div className="food-info">
                 <div className="info-row">
                   <span className="info-label">Price:</span>
-                  <span className="info-value">${food.price}</span>
+                  <span className="info-value" style={{ fontWeight: 'bold', color: '#27ae60' }}>${food.price}</span>
                 </div>
                 <div className="info-row">
                   <span className="info-label">Available:</span>
@@ -169,4 +212,3 @@ const Inventory = () => {
 };
 
 export default Inventory;
-

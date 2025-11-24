@@ -344,6 +344,19 @@ const Quiz = () => {
     navigate('/create-order', { state: { addToCart: food } });
   };
 
+  // --- HELPER: Dynamic Star Rendering ---
+  const renderStars = (rating) => {
+    return (
+      <span style={{ marginRight: '5px' }}>
+        {[1, 2, 3, 4, 5].map(star => (
+          <span key={star} style={{ color: rating >= star ? '#f1c40f' : '#e0e0e0', fontSize: '1rem' }}>
+            ★
+          </span>
+        ))}
+      </span>
+    );
+  };
+
   if (isComplete) {
     return (
       <div className="quiz-container">
@@ -364,6 +377,21 @@ const Quiz = () => {
                 <div className="recommendation-rank">#{index + 1}</div>
                 <h3>{food.foodName}</h3>
                 <p className="recommendation-price">${food.price.toFixed(2)}</p>
+                
+                {/* --- DYNAMIC RATING DISPLAY --- */}
+                <div className="recommendation-rating" style={{ marginBottom: '10px', fontSize: '0.9rem' }}>
+                    {food.rating > 0 ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            {renderStars(food.rating)}
+                            <strong style={{ color: '#333' }}>{food.rating.toFixed(1)}</strong>
+                            <span style={{ color: '#777', fontSize: '0.9em' }}>({food.numberOfRatings} reviews)</span>
+                        </div>
+                    ) : (
+                        <span style={{ color: '#999', fontStyle: 'italic' }}>No ratings yet</span>
+                    )}
+                </div>
+                {/* ------------------------------ */}
+
                 <p className="recommendation-stock">In Stock: {food.amount}</p>
                 {food.allergies && food.allergies.length > 0 && (
                   <div className="recommendation-allergies">
@@ -460,4 +488,3 @@ const Quiz = () => {
 };
 
 export default Quiz;
-

@@ -13,7 +13,7 @@ public interface FoodService {
      * Food constructors
      *
      * @param foodDto
-     *            as a DTO object
+     * as a DTO object
      * @return FoodDto
      */
     FoodDto createFood ( FoodDto foodDto );
@@ -22,7 +22,7 @@ public interface FoodService {
      * Food Id
      *
      * @param foodId
-     *            as Long
+     * as Long
      * @return Dto object
      */
     FoodDto getFoodById ( Long foodId );
@@ -38,7 +38,7 @@ public interface FoodService {
      * Delete Food
      *
      * @param foodId
-     *            as Long
+     * as Long
      */
     void deleteFood ( Long foodId );
 
@@ -51,7 +51,7 @@ public interface FoodService {
      * Helper method
      *
      * @param name
-     *            of food
+     * of food
      * @return true if food is a duplicate
      */
     boolean isDuplicateName ( String name );
@@ -60,7 +60,7 @@ public interface FoodService {
      * Helper method
      *
      * @param foodDto
-     *            as a FoodDto object
+     * as a FoodDto object
      * @return true if the food is valid
      */
     boolean isValidFood ( FoodDto foodDto );
@@ -69,9 +69,9 @@ public interface FoodService {
      * Update the food's inventory amount
      *
      * @param name
-     *            as a String
+     * as a String
      * @param amount
-     *            as an int
+     * as an int
      * @return FoodDto with new amount
      */
     FoodDto updateFood(final String name, final int amount, final int price, final List<String> allergies);
@@ -80,8 +80,23 @@ public interface FoodService {
      * Returns true if the food already exists in the database.
      *
      * @param name
-     *            food's name to check
+     * food's name to check
      * @return FoodDto if already in the database
      */
     FoodDto getDuplicateName ( String name );
+
+    // --- ADD THIS NEW METHOD ---
+
+    /**
+     * Rates a food item, ensuring the order is fulfilled first.
+     *
+     * @param orderId
+     * The ID of the order containing the food
+     * @param foodId
+     * The ID of the food to rate
+     * @param rating
+     * The rating score (e.g., 1.0 to 5.0)
+     * @return The updated FoodDto with new average rating
+     */
+    FoodDto rateFoodInOrder(Long orderId, Long foodId, Double rating);
 }

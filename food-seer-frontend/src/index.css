@@ -2392,3 +2392,123 @@ code {
 .quiz-info-item.allergen-info strong {
   color: #155724;
 }
+
+/* =========================================
+   RATING SYSTEM STYLES
+   ========================================= */
+
+/* 1. Displaying Stars (Read-Only) */
+.rating-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+
+.star-icon {
+  color: #f1c40f; /* Gold color for stars */
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.rating-score {
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.review-count {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.no-rating {
+  color: #95a5a6;
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+/* 2. Interactive Rating Controls (Orders Page) */
+.rating-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.rating-select-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8f9fa;
+  padding: 4px;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.rating-dropdown {
+  padding: 6px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  background-color: white;
+  cursor: pointer;
+  outline: none;
+  color: var(--text-dark);
+}
+
+.rating-dropdown:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.1);
+}
+
+/* 3. Status Badges & Buttons */
+.btn-rate {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-rate:hover {
+  background-color: var(--primary-dark);
+}
+
+.btn-rated-disabled {
+  background-color: #e9ecef;
+  color: #adb5bd;
+  border: 1px solid #dee2e6;
+  padding: 7px 14px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: not-allowed;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* 4. Specific Layout Adjustments */
+
+/* In Inventory Cards */
+.inventory-card .rating-display {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 12px;
+}
+
+/* In Order History Rows */
+.food-item-row .rating-section {
+  min-width: 180px; /* Ensures dropdown doesn't jump around */
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* In Create Order (Product List) */
+.food-item-info .rating-display {
+  margin-top: 4px;
+}

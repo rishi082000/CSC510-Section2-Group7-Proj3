@@ -1,7 +1,9 @@
 package FoodSeer.dto;
 
 import java.util.ArrayList;
+import java.util.HashSet; // Added import
 import java.util.List;
+import java.util.Set;     // Added import
 
 import FoodSeer.entity.Food;
 
@@ -24,11 +26,18 @@ public class OrderDto {
     private boolean isFulfilled;
 
     /**
+     * Set of IDs representing foods in this order that have already been rated.
+     * Used by frontend to disable rating buttons.
+     */
+    private Set<Long> ratedFoodIds;
+
+    /**
      * Default constructor for OrderDto.
      */
     public OrderDto() {
         this.foods = new ArrayList<>();
         this.isFulfilled = false;
+        this.ratedFoodIds = new HashSet<>(); // Initialize to avoid NullPointerException
     }
 
     /**
@@ -42,6 +51,7 @@ public class OrderDto {
         this.name = name;
         this.foods = new ArrayList<>();
         this.isFulfilled = false;
+        this.ratedFoodIds = new HashSet<>();
     }
 
     /**
@@ -123,5 +133,25 @@ public class OrderDto {
      */
     public void setIsFulfilled(final boolean isFulfilled) {
         this.isFulfilled = isFulfilled;
+    }
+
+    // --- NEW GETTERS AND SETTERS ---
+
+    /**
+     * Gets the list of IDs for foods that have already been rated.
+     *
+     * @return Set of Long IDs
+     */
+    public Set<Long> getRatedFoodIds() {
+        return ratedFoodIds;
+    }
+
+    /**
+     * Sets the list of rated food IDs.
+     *
+     * @param ratedFoodIds the set of IDs
+     */
+    public void setRatedFoodIds(final Set<Long> ratedFoodIds) {
+        this.ratedFoodIds = ratedFoodIds;
     }
 }

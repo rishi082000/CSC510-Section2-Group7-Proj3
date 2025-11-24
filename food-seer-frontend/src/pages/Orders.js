@@ -1,29 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMyOrders, getCurrentUser } from '../services/api';
+import { getMyOrders, getCurrentUser, rateFoodItem } from '../services/api'; // Added rateFoodItem
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, fulfilled, unfulfilled
+  
+  // New state to track dropdown values: { "foodId-orderId": 5 }
+  const [ratings, setRatings] = useState({});
+  
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        await getCurrentUser(); // Verify authentication
-        const ordersData = await getMyOrders(); // Get only current user's orders
-        setOrders(ordersData);
-      } catch (error) {
-        console.error('Error fetching orders:', error);
-        navigate('/');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchOrders();
   }, [navigate]);
+
+  const fetchOrders = async () => {
+    try {
+      await getCurrentUser(); // Verify authentication
+      const ordersData = await getMyOrders(); // Get only current user's orders
+      setOrders(ordersData);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      navigate('/');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleBack = () => {
     navigate('/recommendations');
@@ -47,6 +51,35 @@ const Orders = () => {
   const getTotalPrice = (order) => {
     return order.foods.reduce((total, food) => total + food.price, 0);
   };
+
+  // --- NEW RATING HANDLERS ---
+
+  const handleRatingChange = (key, value) => {
+    setRatings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSubmitRating = async (orderId, foodId) => {
+    // Create a unique key for the dropdown state
+    const uniqueKey = `${foodId}-${orderId}`;
+    const ratingValue = ratings[uniqueKey] || 5; // Default to 5
+
+    try {
+      await rateFoodItem(orderId, foodId, ratingValue);
+      alert("Rating submitted successfully! ⭐");
+      
+      // Refresh orders to update the "ratedFoodIds" list and disable the button
+      fetchOrders(); 
+    } catch (error) {
+        // Handle the 409 or 400 errors from backend
+        if (error.message && error.message.includes("already rated")) {
+             alert("You have already rated this item.");
+        } else {
+             alert("Error submitting rating: " + error.message);
+        }
+    }
+  };
+
+  // ---------------------------
 
   if (loading) {
     return (
@@ -120,13 +153,68 @@ const Orders = () => {
 
                 <div className="order-items">
                   <h4>Items:</h4>
-                  <ul>
-                    {order.foods.map((food, index) => (
-                      <li key={`${food.id}-${index}`}>
-                        {food.foodName} - ${food.price}
-                      </li>
-                    ))}
-                  </ul>
+                  {/* Changed <ul> to <div> for better layout control */}
+                  <div className="food-list-container">
+                    {order.foods.map((food, index) => {
+                      
+                      // --- RATING LOGIC ---
+                      // Check if backend says this ID is already rated
+                      const isRated = order.ratedFoodIds && order.ratedFoodIds.includes(food.id);
+                      // Only allow rating if order is Fulfilled AND not yet rated
+                      const canRate = order.isFulfilled && !isRated;
+                      
+                      const uniqueKey = `${food.id}-${order.id}`;
+
+                      return (
+                        <div key={`${food.id}-${index}`} className="food-item-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px dotted #eee' }}>
+                          
+                          {/* Left Side: Food Info */}
+                          <div className="food-info-left">
+                             <span style={{ fontWeight: 'bold' }}>{food.foodName}</span> 
+                             <span style={{ marginLeft: '10px', color: '#666' }}>${food.price}</span>
+                             {/* Removed Average Rating Display as requested */}
+                          </div>
+
+                          {/* Right Side: Rating Controls */}
+                          <div className="food-rating-right">
+                             {isRated ? (
+                               <button disabled className="btn-disabled" style={{ backgroundColor: '#eee', color: '#888', border: '1px solid #ddd', padding: '5px 10px', cursor: 'not-allowed' }}>
+                                 Rated ✅
+                               </button>
+                             ) : (
+                               canRate ? (
+                                 <div style={{ display: 'flex', gap: '5px' }}>
+                                   <select 
+                                      value={ratings[uniqueKey] || 5}
+                                      onChange={(e) => handleRatingChange(uniqueKey, e.target.value)}
+                                      style={{ padding: '5px', borderRadius: '4px' }}
+                                   >
+                                      {/* Generate options from 5 down to 0.5 in 0.5 steps */}
+                                      {[5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1, 0.5].map(val => (
+                                        <option key={val} value={val}>{val} ★</option>
+                                      ))}
+                                   </select>
+                                   <button 
+                                      onClick={() => handleSubmitRating(order.id, food.id)}
+                                      className="create-button" // Reusing your green button style
+                                      style={{ padding: '5px 10px', fontSize: '0.9rem' }}
+                                   >
+                                      Rate
+                                   </button>
+                                 </div>
+                               ) : (
+                                 // If order is pending
+                                 <span style={{ fontSize: '0.85rem', color: '#999', fontStyle: 'italic' }}>
+                                   {order.isFulfilled ? "" : "Wait for delivery"}
+                                 </span>
+                               )
+                             )}
+                          </div>
+
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
@@ -138,4 +226,3 @@ const Orders = () => {
 };
 
 export default Orders;
-
