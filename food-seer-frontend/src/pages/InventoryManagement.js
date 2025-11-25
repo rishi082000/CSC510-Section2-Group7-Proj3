@@ -21,12 +21,14 @@ const InventoryManagement = () => {
     price: 0,
     allergies: []
   });
+  const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
 
   const fetchFoods = async () => {
     try {
       const user = await getCurrentUser();
-      
+      setCurrentUser(user);
+
       // Check if user has staff or admin role
       if (user.role !== 'ROLE_ADMIN' && user.role !== 'ROLE_STAFF') {
         alert('Access denied. Staff or Admin privileges required.');
@@ -89,7 +91,7 @@ const InventoryManagement = () => {
         foodName: formData.foodName.toUpperCase(),
         amount: parseInt(formData.amount),
         price: parseInt(formData.price),
-        allergies: formData.allergies // Already an array
+        allergies: formData.allergies
       };
 
       await createFood(foodData);
@@ -108,7 +110,7 @@ const InventoryManagement = () => {
       foodName: food.foodName,
       amount: food.amount,
       price: food.price,
-      allergies: food.allergies || [] // Load as array
+      allergies: food.allergies || []
     });
     setShowAddForm(true);
   };
@@ -126,7 +128,7 @@ const InventoryManagement = () => {
         foodName: formData.foodName.toUpperCase(),
         amount: parseInt(formData.amount),
         price: parseInt(formData.price),
-        allergies: formData.allergies // Already an array
+        allergies: formData.allergies
       };
 
       await updateFood(foodData);
@@ -150,13 +152,16 @@ const InventoryManagement = () => {
       await fetchFoods();
     } catch (error) {
       console.error('Error deleting food:', error);
-      // Show the actual error message from the backend
       alert(error.message || 'Failed to delete food. Please try again.');
     }
   };
 
   const handleBack = () => {
     navigate('/order-management');
+  };
+
+  const handleDashboard = () => {
+    navigate('/inventory-dashboard');
   };
 
   if (loading) {
@@ -175,6 +180,18 @@ const InventoryManagement = () => {
           <button className="add-button" onClick={() => setShowAddForm(!showAddForm)}>
             {showAddForm ? 'Cancel' : '+ Add Food'}
           </button>
+
+          {/* Admin-only Dashboard button */}
+          {currentUser?.role === 'ROLE_ADMIN' && (
+            <button
+              className="primary-button dashboard-button"
+              onClick={handleDashboard}
+              style={{ marginLeft: '10px' }}
+            >
+              📊 Inventory Dashboard
+            </button>
+          )}
+
           <button className="back-button" onClick={handleBack}>
             Back
           </button>
@@ -288,7 +305,7 @@ const InventoryManagement = () => {
                 <th>Name</th>
                 <th>Price</th>
                 <th>Stock</th>
-                <th>Rating</th> {/* Added Rating Column Header */}
+                <th>Rating</th>
                 <th>Allergies</th>
                 <th>Actions</th>
               </tr>
@@ -304,7 +321,6 @@ const InventoryManagement = () => {
                       {food.amount}
                     </span>
                   </td>
-                  {/* Added Rating Column Data */}
                   <td>
                     {food.rating > 0 ? (
                         <span style={{ whiteSpace: 'nowrap' }}>

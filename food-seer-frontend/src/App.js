@@ -83,7 +83,7 @@ function App() {
             } 
           />
           <Route
-            path="/dashboard"
+            path="/inventory-dashboard"
             element={
               <AdminRoute>
                 <AppLayout>
@@ -123,7 +123,18 @@ function App() {
               </ProtectedRoute>
             } 
           />
-          
+          {/* Admin-only Order Dashboard route */}
+          <Route
+          path="/order-dashboard"
+          element={
+            <AdminRoute>
+              <AppLayout>
+                <Dashboard type="orders" />
+              </AppLayout>
+            </AdminRoute>
+          }
+          />
+
           {/* Staff & Admin routes */}
           <Route 
             path="/order-management" 
