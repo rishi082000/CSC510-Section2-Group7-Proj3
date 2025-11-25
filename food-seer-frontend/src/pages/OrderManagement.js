@@ -13,8 +13,7 @@ const OrderManagement = () => {
   const fetchOrders = async () => {
     try {
       const user = await getCurrentUser();
-      
-      // Check if user has staff or admin role
+
       if (user.role !== 'ROLE_ADMIN' && user.role !== 'ROLE_STAFF') {
         alert('Access denied. Staff or Admin privileges required.');
         navigate('/');
@@ -38,16 +37,13 @@ const OrderManagement = () => {
   }, []);
 
   const handleFulfillOrder = async (orderId) => {
-    if (!window.confirm('Mark this order as fulfilled?')) {
-      return;
-    }
+    if (!window.confirm('Mark this order as fulfilled?')) return;
 
     setProcessing(prev => ({ ...prev, [orderId]: true }));
-    
+
     try {
       await fulfillOrder(orderId);
       alert('Order fulfilled successfully!');
-      // Refresh orders
       await fetchOrders();
     } catch (error) {
       console.error('Error fulfilling order:', error);
@@ -57,21 +53,9 @@ const OrderManagement = () => {
     }
   };
 
-  const getTotalPrice = (order) => {
-    return order.foods.reduce((total, food) => total + food.price, 0);
-  };
+  const getTotalPrice = (order) => order.foods.reduce((total, food) => total + food.price, 0);
 
-  const handleBack = () => {
-    navigate('/inventory-management');
-  };
-
-  if (loading) {
-    return (
-      <div className="staff-dashboard-container">
-        <div className="loading">Loading dashboard...</div>
-      </div>
-    );
-  }
+  if (loading) return <div className="staff-dashboard-container"><div className="loading">Loading orders...</div></div>;
 
   const displayOrders = view === 'unfulfilled' ? unfulfilledOrders : fulfilledOrders;
 
@@ -79,9 +63,18 @@ const OrderManagement = () => {
     <div className="staff-dashboard-container">
       <div className="dashboard-header">
         <h1>📦 Order Management</h1>
-        <button className="back-button" onClick={handleBack}>
-          Back
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {/* Navigate to Order Dashboard page */}
+          <button 
+            className="dashboard-button" 
+            onClick={() => navigate('/order-dashboard')}
+          >
+            📊 Order Dashboard
+          </button>
+          <button className="back-button" onClick={() => navigate('/inventory-management')}>
+            Back
+          </button>
+        </div>
       </div>
 
       <div className="dashboard-stats">
@@ -119,7 +112,7 @@ const OrderManagement = () => {
           <p>No {view} orders at this time.</p>
         </div>
       ) : (
-        <div className="orders-list">
+        <div className="orders-section">
           {displayOrders.map(order => (
             <div key={order.id} className={`order-card ${view === 'unfulfilled' ? 'pending' : 'completed'}`}>
               <div className="order-header">
@@ -166,10 +159,7 @@ const OrderManagement = () => {
                       <tr key={`${food.id}-${index}`}>
                         <td>{food.foodName}</td>
                         <td>${food.price}</td>
-                        <td>{food.allergies && food.allergies.length > 0 
-                          ? food.allergies.join(', ') 
-                          : 'None'}
-                        </td>
+                        <td>{food.allergies && food.allergies.length > 0 ? food.allergies.join(', ') : 'None'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -184,4 +174,3 @@ const OrderManagement = () => {
 };
 
 export default OrderManagement;
-

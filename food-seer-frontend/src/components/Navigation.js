@@ -147,17 +147,7 @@ const Navigation = () => {
 
             {/* Admin-only menu items */}
              {isAdmin && (
-  <>
-    <button
-      className={`nav-link admin ${location.pathname === '/dashboard' ? 'active' : ''}`}
-      onClick={() => {
-        navigate('/dashboard');
-        setMenuOpen(false);
-      }}
-    >
-      📊 Dashboard
-    </button>
-
+              <>
               <button
                 className={`nav-link admin ${location.pathname === '/users' ? 'active' : ''}`}
                 onClick={() => {
