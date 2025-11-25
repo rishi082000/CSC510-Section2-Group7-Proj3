@@ -12,6 +12,8 @@ import InventoryManagement from './pages/InventoryManagement';
 import UserManagement from './pages/UserManagement';
 import Chatbot from './pages/Chatbot';
 import Quiz from './pages/Quiz';
+import AdminRoute from './components/AdminRoute';
+import Dashboard from './pages/Dashboard';
 import Navigation from './components/Navigation';
 import { isAuthenticated } from './services/api';
 
@@ -80,6 +82,17 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          <Route
+            path="/inventory-dashboard"
+            element={
+              <AdminRoute>
+                <AppLayout>
+                  <Dashboard />
+                </AppLayout>
+              </AdminRoute>
+            }
+          />
+          
           <Route 
             path="/inventory" 
             element={
@@ -110,7 +123,18 @@ function App() {
               </ProtectedRoute>
             } 
           />
-          
+          {/* Admin-only Order Dashboard route */}
+          <Route
+          path="/order-dashboard"
+          element={
+            <AdminRoute>
+              <AppLayout>
+                <Dashboard type="orders" />
+              </AppLayout>
+            </AdminRoute>
+          }
+          />
+
           {/* Staff & Admin routes */}
           <Route 
             path="/order-management" 

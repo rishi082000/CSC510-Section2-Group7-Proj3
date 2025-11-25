@@ -477,3 +477,24 @@ export const sendChatMessage = async (message) => {
   }
 };
 
+export const rateFoodItem = async (orderId, foodId, rating) => {
+  try {
+    // Note: rating is passed as a query parameter (?rating=5.0)
+    const response = await fetch(`${API_BASE_URL}/api/foods/orders/${orderId}/${foodId}/rate?rating=${rating}`, {
+      method: 'POST',
+      headers: createHeaders(true),
+    });
+    
+    if (!response.ok) {
+      // We try to get the error message from the backend (e.g., "You have already rated this...")
+      const errorText = await response.text();
+      throw new Error(errorText || 'Failed to submit rating');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Rate food error:', error);
+    throw error;
+  }
+};
+

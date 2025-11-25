@@ -91,6 +91,19 @@ const Recommendations = () => {
     navigate('/orders');
   };
 
+  // --- HELPER: Dynamic Star Rendering ---
+  const renderStars = (rating) => {
+    return (
+      <span style={{ marginRight: '5px' }}>
+        {[1, 2, 3, 4, 5].map(star => (
+          <span key={star} style={{ color: rating >= star ? '#f1c40f' : '#e0e0e0', fontSize: '1rem' }}>
+            ★
+          </span>
+        ))}
+      </span>
+    );
+  };
+
   if (loading) {
     return (
       <div className="recommendations-container">
@@ -110,9 +123,9 @@ const Recommendations = () => {
           <button className="nav-button" onClick={handleViewOrders}>
             My Orders
           </button>
-        <button className="logout-button" onClick={handleLogout}>
-          Logout
-        </button>
+          <button className="logout-button" onClick={handleLogout}>
+            Logout
+          </button>
         </div>
       </div>
 
@@ -148,22 +161,37 @@ const Recommendations = () => {
             <p>Try adjusting your budget or dietary restrictions, or browse all available foods.</p>
           </div>
         ) : (
-        <div className="recommendations-grid">
+          <div className="recommendations-grid">
             {filteredFoods.map((food) => (
               <div key={food.id} className="recommendation-card">
                 <div className="recommendation-icon">🍽️</div>
                 <h3>{food.foodName}</h3>
+                
+                {/* --- RATING DISPLAY --- */}
+                <div className="food-rating" style={{ margin: '8px 0', fontSize: '0.9rem' }}>
+                    {food.rating > 0 ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                            {renderStars(food.rating)}
+                            <strong style={{ color: '#333' }}>{food.rating.toFixed(1)}</strong>
+                            <span style={{ color: '#777', fontSize: '0.9em' }}>({food.numberOfRatings})</span>
+                        </div>
+                    ) : (
+                        <span style={{ color: '#999', fontStyle: 'italic' }}>No ratings yet</span>
+                    )}
+                </div>
+                {/* ---------------------- */}
+
                 <div className="food-details">
                   <p><strong>Price:</strong> ${food.price}</p>
                   <p><strong>Available:</strong> {food.amount > 0 ? `${food.amount} units` : 'Out of stock'}</p>
                   {food.allergies && food.allergies.length > 0 && (
                     <p><strong>Allergies:</strong> {food.allergies.join(', ')}</p>
                   )}
-          </div>
+                </div>
                 <div className="recommendation-match">
                   {food.amount > 0 ? '✓ Available' : '✗ Out of Stock'}
-          </div>
-        </div>
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -178,4 +206,3 @@ const Recommendations = () => {
 };
 
 export default Recommendations;
-

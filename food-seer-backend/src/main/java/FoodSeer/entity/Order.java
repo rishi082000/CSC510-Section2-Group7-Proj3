@@ -1,9 +1,11 @@
 package FoodSeer.entity;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-import jakarta.persistence.CascadeType;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -42,6 +44,13 @@ public class Order {
     private boolean isFulfilled;
 
     /**
+     * A set of Food IDs that have already been rated in this order.
+     * Using a Set prevents duplicates and allows fast lookups.
+     */
+    @ElementCollection
+    private Set<Long> ratedFoodIds = new HashSet<>();
+
+    /**
      * Default constructor for Hibernate.
      */
     public Order() {
@@ -59,6 +68,7 @@ public class Order {
         this.name = name;
         this.foods = new ArrayList<>();
         this.isFulfilled = false;
+        this.ratedFoodIds = new HashSet<>();
     }
 
     /**
@@ -159,5 +169,44 @@ public class Order {
      */
     public void setUser(final User user) {
         this.user = user;
+    }
+
+    // --- NEW METHODS FOR RATING LOGIC ---
+
+    /**
+     * Gets the set of Food IDs that have already been rated.
+     *
+     * @return Set of Long IDs
+     */
+    public Set<Long> getRatedFoodIds() {
+        return ratedFoodIds;
+    }
+
+    /**
+     * Sets the list of rated food IDs.
+     *
+     * @param ratedFoodIds the set of IDs
+     */
+    public void setRatedFoodIds(final Set<Long> ratedFoodIds) {
+        this.ratedFoodIds = ratedFoodIds;
+    }
+
+    /**
+     * Marks a specific food ID as rated for this order.
+     *
+     * @param foodId The ID of the food
+     */
+    public void addRatedFoodId(final Long foodId) {
+        this.ratedFoodIds.add(foodId);
+    }
+
+    /**
+     * Checks if a specific food has already been rated in this order.
+     *
+     * @param foodId The ID to check
+     * @return true if already rated, false otherwise
+     */
+    public boolean hasFoodBeenRated(final Long foodId) {
+        return this.ratedFoodIds.contains(foodId);
     }
 }

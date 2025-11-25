@@ -34,11 +34,11 @@ public class FoodServiceImpl implements FoodService {
 
     /** Connection to the repository to work with the DAO + database */
     @Autowired
-    private InventoryRepository  inventoryRepository;
+    private InventoryRepository inventoryRepository;
 
     /** Connection to the repository to work with the DAO + database */
     @Autowired
-    private InventoryService     inventoryService;
+    private InventoryService inventoryService;
     
     /** Connection to the order repository */
     @Autowired
@@ -49,7 +49,7 @@ public class FoodServiceImpl implements FoodService {
      * needs to add to a new/existing inventory
      *
      * @param foodDto
-     *            food to create
+     * food to create
      * @return created food
      */
     @Override
@@ -111,10 +111,10 @@ public class FoodServiceImpl implements FoodService {
      * Returns the food with the given id.
      *
      * @param foodId
-     *            food's id
+     * food's id
      * @return the food with the given id
      * @throws ResourceNotFoundException
-     *             if the food doesn't exist
+     * if the food doesn't exist
      */
     @Override
     public FoodDto getFoodById ( final Long foodId ) {
@@ -138,11 +138,11 @@ public class FoodServiceImpl implements FoodService {
      * Deletes the food with the given id
      *
      * @param foodId
-     *            food's id
+     * food's id
      * @throws ResourceNotFoundException
-     *             if the food doesn't exist
+     * if the food doesn't exist
      * @throws IllegalStateException
-     *             if the food is part of an unfulfilled order
+     * if the food is part of an unfulfilled order
      */
     @Override
     @Transactional
@@ -190,7 +190,7 @@ public class FoodServiceImpl implements FoodService {
      * Returns true if the recipe already exists in the database.
      *
      * @param name
-     *            recipe's name to check
+     * recipe's name to check
      * @return true if already in the database
      */
     @Override
@@ -208,7 +208,7 @@ public class FoodServiceImpl implements FoodService {
      * Returns true if the recipe already exists in the database.
      *
      * @param name
-     *            recipe's name to check
+     * recipe's name to check
      * @return true if already in the database
      */
     @Override
@@ -227,7 +227,7 @@ public class FoodServiceImpl implements FoodService {
      * Returns true if the food is valid.
      *
      * @param foodDto
-     *            as a FoodDto object
+     * as a FoodDto object
      * @return true if valid
      */
     @Override
@@ -299,6 +299,65 @@ public class FoodServiceImpl implements FoodService {
             throw new ResourceNotFoundException( "Food does not exist with name " + name );
         }
 
+    }
+
+    // --- UPDATED METHOD FOR ONE RATING PER ORDER LOGIC ---
+
+    /**
+     * Rates a food item ONLY if the order is fulfilled AND not already rated.
+     */
+    @Override
+    @Transactional
+    public FoodDto rateFoodInOrder(Long orderId, Long foodId, Double rating) {
+        
+        // 1. Validate Input
+        if (rating == null || rating < 0 || rating > 5) {
+             throw new IllegalArgumentException("Rating must be between 0 and 5");
+        }
+
+        // 2. Find the Order
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
+
+        // 3. GATEKEEPER: Is the order fulfilled?
+        if (!order.getIsFulfilled()) {
+            throw new IllegalStateException("You cannot rate an item from an order that has not been delivered/fulfilled yet.");
+        }
+
+        // 4. VALIDATION: Did they actually buy this food in this order?
+        boolean foodIsInOrder = order.getFoods().stream()
+                .anyMatch(f -> f.getId().equals(foodId));
+        
+        if (!foodIsInOrder) {
+            throw new IllegalArgumentException("Food item " + foodId + " is not part of Order " + orderId);
+        }
+
+        // 5. CHECK: Has this food already been rated in this specific order?
+        if (order.hasFoodBeenRated(foodId)) {
+            throw new IllegalStateException("You have already rated this food item for this order.");
+        }
+
+        // 6. Fetch the Food
+        Food food = foodRepository.findById(foodId)
+                .orElseThrow(() -> new ResourceNotFoundException("Food not found with ID: " + foodId));
+
+        // 7. THE MATH: Calculate new rolling average
+        double currentRating = food.getRating();
+        int currentCount = food.getNumberOfRatings();
+
+        double newAverage = ((currentRating * currentCount) + rating) / (currentCount + 1);
+
+        // 8. Update Food fields
+        food.setRating(newAverage);
+        food.setNumberOfRatings(currentCount + 1);
+
+        // 9. CRITICAL: Mark this food as rated in the order history!
+        order.addRatedFoodId(foodId);
+        orderRepository.saveAndFlush(order); // Save the "Checklist"
+
+        // 10. Save Food and Convert
+        Food savedFood = foodRepository.saveAndFlush(food);
+        return FoodMapper.mapToFoodDto(savedFood);
     }
 
 }

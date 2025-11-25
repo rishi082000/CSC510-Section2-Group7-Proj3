@@ -1,6 +1,7 @@
 package FoodSeer.mapper;
 
 import java.util.stream.Collectors;
+import java.util.ArrayList; // Added simple list handling
 
 import FoodSeer.dto.OrderDto;
 import FoodSeer.dto.FoodDto;
@@ -22,16 +23,32 @@ public class OrderMapper {
         final OrderDto dto = new OrderDto(order.getId(), order.getName());
 
         // Map Food entities to FoodDto and add them
+        // Note: This complex stream recreates Food objects. 
+        // Ideally, ensure these new Food objects have IDs so the frontend can use them!
         dto.setFoods(order.getFoods().stream()
                 .map(FoodMapper::mapToFoodDto)
-                .map(foodDto -> new Food(
+                .map(foodDto -> {
+                    // We recreate the Food entity here to put inside the DTO
+                    Food f = new Food(
                         foodDto.getFoodName(),
                         foodDto.getAmount(),
                         foodDto.getPrice(),
-                        foodDto.getAllergies()))
+                        foodDto.getAllergies()
+                    );
+                    // CRITICAL: We must ensure the ID is preserved, 
+                    // otherwise the frontend cannot rate specific items!
+                    f.setId(foodDto.getId()); 
+                    return f;
+                })
                 .collect(Collectors.toList()));
 
         dto.setIsFulfilled(order.getIsFulfilled());
+        
+        // --- ADDED THIS LINE ---
+        // Copies the "Checklist" of rated items to the DTO
+        dto.setRatedFoodIds(order.getRatedFoodIds());
+        // -----------------------
+
         return dto;
     }
 
@@ -54,6 +71,10 @@ public class OrderMapper {
                 .collect(Collectors.toList()));
 
         order.setIsFulfilled(orderDto.getIsFulfilled());
+        
+        // Note: We do NOT map ratedFoodIds back here.
+        // The service layer handles adding IDs to the history one by one.
+        
         return order;
     }
 }

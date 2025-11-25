@@ -263,6 +263,19 @@ Format your response as: "I recommend [FOOD NAME]! [Explanation]"`;
     }
   };
 
+  // --- HELPER: Dynamic Star Rendering ---
+  const renderStars = (rating) => {
+    return (
+      <span style={{ marginRight: '5px' }}>
+        {[1, 2, 3, 4, 5].map(star => (
+          <span key={star} style={{ color: rating >= star ? '#f1c40f' : '#e0e0e0', fontSize: '1rem' }}>
+            ★
+          </span>
+        ))}
+      </span>
+    );
+  };
+
   return (
     <div className="chatbot-container">
       <div className="chatbot-header">
@@ -279,6 +292,21 @@ Format your response as: "I recommend [FOOD NAME]! [Explanation]"`;
                 <div className="food-card">
                   <h4>{msg.food.foodName}</h4>
                   <p className="food-price">${msg.food.price.toFixed(2)}</p>
+                  
+                  {/* --- DYNAMIC RATING DISPLAY --- */}
+                  <div className="food-rating" style={{ marginBottom: '10px', fontSize: '0.9rem' }}>
+                      {msg.food.rating > 0 ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              {renderStars(msg.food.rating)}
+                              <strong style={{ color: '#333' }}>{msg.food.rating.toFixed(1)}</strong>
+                              <span style={{ color: '#777', fontSize: '0.9em' }}>({msg.food.numberOfRatings} reviews)</span>
+                          </div>
+                      ) : (
+                          <span style={{ color: '#999', fontStyle: 'italic' }}>No ratings yet</span>
+                      )}
+                  </div>
+                  {/* ------------------------------ */}
+
                   <p className="food-allergies">
                     {msg.food.allergies && msg.food.allergies.length > 0 ? (
                       <>Contains: {msg.food.allergies.join(', ')}</>
@@ -347,4 +375,3 @@ Format your response as: "I recommend [FOOD NAME]! [Explanation]"`;
 };
 
 export default Chatbot;
-
