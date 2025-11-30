@@ -1,5 +1,6 @@
 package FoodSeer.service.impl;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -9,77 +10,102 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import FoodSeer.dto.ChatRequestDto;
 import FoodSeer.dto.ChatResponseDto;
+import FoodSeer.entity.Food;
+import FoodSeer.repositories.FoodRepository;
 import FoodSeer.service.ChatService;
 
-/**
- * Implementation of ChatService for communicating with Ollama AI.
- */
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class ChatServiceImpl implements ChatService {
-    
-    /** Ollama API endpoint */
-    private static final String OLLAMA_URL = "http://localhost:11434/api/generate";
-    
-    /** Model to use */
-    private static final String MODEL = "gemma3:1b";
-    
-    /** REST template for HTTP requests */
+
+    private static final String OLLAMA_URL = "http://localhost:11434/api/chat";
+    private static final String MODEL = "qwen2.5:1.5b";
+
     private final RestTemplate restTemplate;
-    
-    /** JSON object mapper */
     private final ObjectMapper objectMapper;
-    
-    /**
-     * Constructor for ChatServiceImpl.
-     */
+
+    @Autowired
+    private FoodRepository foodRepository; // fetch foods dynamically
+
     public ChatServiceImpl() {
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
     }
-    
+
     @Override
     public ChatResponseDto sendMessage(final ChatRequestDto chatRequest) {
         try {
-            // Create request body for Ollama
-            final ObjectNode requestBody = objectMapper.createObjectNode();
+            ArrayNode messages = objectMapper.createArrayNode();
+
+            // System prompt
+            ObjectNode systemMsg = objectMapper.createObjectNode();
+            systemMsg.put("role", "system");
+            systemMsg.put("content",
+                "You are FoodSeer AI. Respond naturally to greetings and normal conversation. " +
+                "Only provide food recommendations when the user explicitly asks for it. " +
+                "Do not add emojis, marketing text, or default food suggestions. Keep answers concise and factual."
+            );
+            messages.add(systemMsg);
+
+            // User message
+            ObjectNode userMsg = objectMapper.createObjectNode();
+            userMsg.put("role", "user");
+            userMsg.put("content", chatRequest.getMessage());
+            messages.add(userMsg);
+
+            // Determine if user explicitly asked for a recommendation
+            String msgLower = chatRequest.getMessage().toLowerCase();
+            if (msgLower.contains("what should i eat") || 
+                msgLower.contains("recommend food") || 
+                msgLower.contains("suggest food")) {
+
+                // Fetch menu from DB
+                List<Food> foods = foodRepository.findAll();
+                String menuString = foods.stream()
+                        .map(f -> f.getFoodName() + " ($" + f.getPrice() + ")"
+                                + (f.getAllergies() != null && !f.getAllergies().isEmpty()
+                                    ? " Contains: " + String.join(", ", f.getAllergies())
+                                    : " No common allergens"))
+                        .collect(Collectors.joining("; "));
+
+                ObjectNode menuMsg = objectMapper.createObjectNode();
+                menuMsg.put("role", "system");
+                menuMsg.put("content", "Available foods with prices and allergies: " + menuString);
+                messages.add(menuMsg);
+            }
+
+            // Prepare request
+            ObjectNode requestBody = objectMapper.createObjectNode();
             requestBody.put("model", MODEL);
-            requestBody.put("prompt", chatRequest.getMessage());
+            requestBody.set("messages", messages);
             requestBody.put("stream", false);
-            
-            // Set headers
-            final HttpHeaders headers = new HttpHeaders();
+
+            HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            
-            // Make request
-            final HttpEntity<String> entity = new HttpEntity<>(
-                objectMapper.writeValueAsString(requestBody), 
-                headers
-            );
-            
-            final ResponseEntity<String> response = restTemplate.postForEntity(
-                OLLAMA_URL, 
-                entity, 
-                String.class
-            );
-            
-            // Parse response
+
+            HttpEntity<String> httpEntity =
+                    new HttpEntity<>(objectMapper.writeValueAsString(requestBody), headers);
+
+            ResponseEntity<String> response =
+                    restTemplate.postForEntity(OLLAMA_URL, httpEntity, String.class);
+
             if (response.getBody() != null) {
-                final JsonNode responseJson = objectMapper.readTree(response.getBody());
-                final String aiResponse = responseJson.get("response").asText();
+                JsonNode json = objectMapper.readTree(response.getBody());
+                String aiResponse = json.get("message").get("content").asText();
                 return new ChatResponseDto(aiResponse);
             }
-            
+
             return new ChatResponseDto("No response from AI");
-            
-        } catch (final Exception e) {
-            System.err.println("Error communicating with Ollama: " + e.getMessage());
-            e.printStackTrace();
+
+        } catch (Exception e) {
             return new ChatResponseDto("Error: " + e.getMessage());
         }
     }
 }
-
