@@ -15,6 +15,7 @@ import Quiz from './pages/Quiz';
 import AdminRoute from './components/AdminRoute';
 import Dashboard from './pages/Dashboard';
 import Navigation from './components/Navigation';
+import DriverDashboard from './pages/DriverDashboard';
 import { isAuthenticated } from './services/api';
 
 // Protected Route component
@@ -168,6 +169,17 @@ function App() {
               </ProtectedRoute>
             } 
           />
+
+          <Route
+            path="/driver-dashboard"
+            element={
+              <ProtectedRoute>
+                  <AppLayout>
+                    <DriverDashboard />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
 
           {/* Catch all - redirect to login */}
           <Route path="*" element={<Navigate to="/" />} />

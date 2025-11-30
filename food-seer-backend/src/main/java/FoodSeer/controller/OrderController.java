@@ -2,17 +2,13 @@ package FoodSeer.controller;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import FoodSeer.dto.OrderDto;
 import FoodSeer.exception.ResourceNotFoundException;
@@ -27,6 +23,7 @@ import FoodSeer.service.OrderService;
 @RequestMapping("/api/orders")
 public class OrderController {
 
+    Logger logger = LoggerFactory.getLogger(OrderController.class);
     /** Connection to OrderService */
     @Autowired
     private OrderService orderService;
@@ -58,7 +55,7 @@ public class OrderController {
      *
      * @return JSON list of unfulfilled orders
      */
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CUSTOMER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CUSTOMER', 'DRIVER')")
     @GetMapping("/unfulfilledOrders")
     public List<OrderDto> getUnfulfilledOrders() {
         return orderService.getAllUnfulfilledOrders();
@@ -156,4 +153,11 @@ public class OrderController {
         return orderService.getCurrentUserUnfulfilledOrders();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'DRIVER')")
+    @PostMapping("/{id}/status")
+    public ResponseEntity<?> updateOrderStatus(@PathVariable("id") final Long id){
+        logger.info("Updating order status for order ID: {}", id);
+        final OrderDto updatedOrderDto = orderService.updateOrder(id);
+        return ResponseEntity.ok(updatedOrderDto);
+    }
 }

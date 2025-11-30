@@ -102,6 +102,8 @@ const UserManagement = () => {
         return 'Staff';
       case 'ROLE_CUSTOMER':
         return 'Customer';
+      case 'ROLE_DRIVER':
+        return 'Driver';
       default:
         return role;
     }

@@ -49,23 +49,22 @@ export const login = async (username, password) => {
   }
 };
 
-export const register = async (username, email, password) => {
+export const register = async (username, email, password, role) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: 'POST',
-      headers: createHeaders(false),
-      body: JSON.stringify({ username, email, password }),
-    });
-    
-    if (!response.ok) {
-      throw new Error('Registration failed');
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Registration error:', error);
-    throw error;
-  }
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: createHeaders(false),
+        body: JSON.stringify({ username, email, password, role }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error);
+      }
+      return await response.json();
+   } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+   }
 };
 
 export const logout = () => {
@@ -496,5 +495,37 @@ export const rateFoodItem = async (orderId, foodId, rating) => {
     console.error('Rate food error:', error);
     throw error;
   }
+};
+
+export const fetchDriverDashboard = async (user) => {
+  const response = await fetch(`${API_BASE_URL}/api/driverStats?username=${encodeURIComponent(user)}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch driver dashboard data");
+  }
+
+  return await response.json();
+};
+
+export const updateOrderStatus = async (orderId) => {
+  const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}/status`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      // Add authorization header if needed
+      // 'Authorization': `Bearer ${getToken()}`
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update order status');
+  }
+
+  return await response.json();
 };
 

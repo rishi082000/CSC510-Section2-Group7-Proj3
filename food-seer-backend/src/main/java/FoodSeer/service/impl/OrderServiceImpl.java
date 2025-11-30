@@ -3,8 +3,11 @@ package FoodSeer.service.impl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +30,7 @@ import FoodSeer.service.UserService;
 @Service
 public class OrderServiceImpl implements OrderService {
 
+    Logger logger = LoggerFactory.getLogger(OrderServiceImpl.class);
     /** Repository for food items. */
     @Autowired
     private FoodRepository foodRepository;
@@ -243,5 +247,22 @@ public class OrderServiceImpl implements OrderService {
         
         final List<Order> orders = orderRepository.findByUserAndIsFulfilled(currentUser, false);
         return orders.stream().map(OrderMapper::mapToOrderDto).collect(Collectors.toList());
+    }
+
+    @Override
+    public OrderDto updateOrder(final Long orderId){
+        Optional<Order> orderList = orderRepository.findById(orderId);
+
+        if(orderList.isEmpty()){
+            logger.info("Order with id {} does not exist", orderId);
+            return null;
+        }
+
+        Order order = orderList.get();
+
+        order.setIsFulfilled(true);
+
+        orderRepository.save(order);
+        return OrderMapper.mapToOrderDto(order);
     }
 }

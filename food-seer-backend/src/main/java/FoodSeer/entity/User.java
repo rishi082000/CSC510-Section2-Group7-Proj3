@@ -56,11 +56,11 @@ public class User {
         this.dietaryRestrictions = o.getDietaryRestrictions();
     }
 
-    public User ( final RegisterRequestDto o, final String pass ) {
+    public User ( final RegisterRequestDto o, final String pass, final String role ) {
         this.username = o.username();
         this.email = o.email();
         this.password = pass;
-        this.role = "ROLE_CUSTOMER";
+        this.role = role;
     }
 
 }

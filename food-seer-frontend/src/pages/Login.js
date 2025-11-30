@@ -34,8 +34,11 @@ const Login = () => {
       if (user.role === 'ROLE_ADMIN' || user.role === 'ROLE_STAFF') {
         // Admins and Staff skip customer flow, go directly to Order Management
         navigate('/order-management');
-      } else {
+      } else if (user.role === 'ROLE_DRIVER'){
+        navigate('/driver-dashboard');
+      }
         // Standard users go to preferences
+      else{
         navigate('/preferences');
       }
     } catch (err) {
