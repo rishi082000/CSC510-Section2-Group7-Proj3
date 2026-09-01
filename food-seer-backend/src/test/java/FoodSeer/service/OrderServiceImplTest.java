@@ -307,6 +307,203 @@ class OrderServiceImplTest {
         verify(driverStatsService, times(1)).updateTotalEarnings("driverB", saved.getDeliveryCost());
     }
 
+    // --- Use Case #10, Extension 2b: no guard against re-picking-up an assigned order ---
+    @Test
+    void updateOrder_pickUp_reassignsOrder_evenIfAlreadyPickedUpByAnotherDriver() {
+        DriverStats existingDriver = new DriverStats();
+        existingDriver.setUsername("driverA");
+
+        Order order = new Order();
+        order.setId(400L);
+        order.setStatus("Picked Up");
+        order.setDriver(existingDriver);
+        order.setIsFulfilled(false);
+
+        when(orderRepository.findById(400L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        DriverStatsDto statsB = new DriverStatsDto("driverB", 0, BigDecimal.ZERO, BigDecimal.ZERO, 0);
+        when(driverStatsService.getDriverStats("driverB")).thenReturn(statsB);
+        DriverStats mappedB = new DriverStats();
+        mappedB.setUsername("driverB");
+
+        try (MockedStatic<DriverStatsMapper> mocked = mockStatic(DriverStatsMapper.class)) {
+            mocked.when(() -> DriverStatsMapper.mapToDriverStats(statsB)).thenReturn(mappedB);
+
+            orderService.updateOrder(400L, "driverB", "Picked Up");
+
+            ArgumentCaptor<Order> captor = ArgumentCaptor.forClass(Order.class);
+            verify(orderRepository, times(1)).save(captor.capture());
+            assertEquals("driverB", captor.getValue().getDriver().getUsername());
+        }
+    }
+    // This proves extension 2b: updateOrder() never checks whether the order is already
+    // assigned or already "Picked Up" before reassigning it -- driverB silently steals
+    // an order already picked up by driverA.
+
+    // --- Use Case #10, Extension 5a: "Delivered" from the wrong driver is silently unfulfilled ---
+    @Test
+    void updateOrder_delivered_byWrongDriver_leavesUnfulfilled_noError() {
+        DriverStats assignedDriver = new DriverStats();
+        assignedDriver.setUsername("driverA");
+
+        Order order = new Order();
+        order.setId(401L);
+        order.setStatus("Picked Up");
+        order.setDriver(assignedDriver);
+        order.setIsFulfilled(false);
+
+        when(orderRepository.findById(401L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        OrderDto result = orderService.updateOrder(401L, "driverB", "Delivered");
+
+        assertNotNull(result);
+        assertEquals("Delivered", result.getStatus());
+        assertFalse(result.getIsFulfilled());
+        verify(driverStatsService, never()).updateTotalEarnings(anyString(), any());
+    }
+    // This proves extension 5a: status is overwritten to "Delivered" regardless, but
+    // since the requesting driver doesn't match the assigned one, isFulfilled stays
+    // false and no earnings are credited -- with no exception or error message returned.
+
+    // --- Use Case #10, Extension 5b: NPE when driver is unassigned and "Delivered" arrives ---
+    @Test
+    void updateOrder_delivered_withNoAssignedDriver_throwsNPE() {
+        Order order = new Order();
+        order.setId(402L);
+        order.setStatus("Placed");
+        order.setIsFulfilled(false);
+        // order.getDriver() is null -- never went through "Picked Up"
+
+        when(orderRepository.findById(402L)).thenReturn(Optional.of(order));
+
+        assertThrows(NullPointerException.class,
+                () -> orderService.updateOrder(402L, "driverA", "Delivered"));
+
+        verify(orderRepository, never()).save(any());
+    }
+    // This proves extension 5b: order.getDriver().getUsername() throws NullPointerException
+    // when the order was never assigned a driver, and this happens before orderRepository.save().
+
+    // --- Use Case #10, Extension 5c: NPE when status is missing ---
+    @Test
+    void updateOrder_statusIsNull_throwsNPE_beforeSave() {
+        Order order = new Order();
+        order.setId(403L);
+        order.setStatus("Placed");
+
+        when(orderRepository.findById(403L)).thenReturn(Optional.of(order));
+
+        assertThrows(NullPointerException.class,
+                () -> orderService.updateOrder(403L, "driverA", null));
+
+        verify(orderRepository, never()).save(any());
+    }
+    // This proves extension 5c: status.equals("Picked Up") throws NullPointerException
+    // when status is null, before orderRepository.save() is ever reached.
+
+    // --- Use Case #10, Extension 5d: unrecognized status string is persisted verbatim ---
+    @Test
+    void updateOrder_unrecognizedStatus_isPersistedVerbatim_andFallsIntoUnfulfilledBranch() {
+        Order order = new Order();
+        order.setId(404L);
+        order.setStatus("Placed");
+        order.setIsFulfilled(false);
+
+        when(orderRepository.findById(404L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        OrderDto result = orderService.updateOrder(404L, "driverA", "Bananas");
+
+        assertEquals("Bananas", result.getStatus());
+        assertFalse(result.getIsFulfilled());
+        verify(driverStatsService, never()).updateTotalEarnings(anyString(), any());
+    }
+    // This proves extension 5d: no validation against an allowed status set -- an
+    // arbitrary string is saved as-is and falls into the same unfulfilled branch as
+    // any other non-"Delivered" value.
+
+    // --- Use Case #10, Extension 5e: reprocessing an already-delivered order double-credits ---
+    @Test
+    void updateOrder_secondDeliveredCall_doubleCreditsEarnings() {
+        DriverStats driver = new DriverStats();
+        driver.setUsername("driverA");
+
+        Order order = new Order();
+        order.setId(405L);
+        order.setStatus("Delivered");
+        order.setIsFulfilled(true); // already delivered and paid out once
+        order.setDriver(driver);
+        order.setDeliveryCost(BigDecimal.valueOf(10));
+
+        when(orderRepository.findById(405L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        orderService.updateOrder(405L, "driverA", "Delivered"); // reprocessing the same delivery
+
+        verify(driverStatsService, times(1)).updateTotalEarnings("driverA", BigDecimal.valueOf(10));
+    }
+    // This proves extension 5e: updateOrder() never checks order.getIsFulfilled() before
+    // crediting earnings again -- a second "Delivered" call on an already-fulfilled order
+    // still triggers driverStatsService.updateTotalEarnings(), as if a new delivery occurred.
+
+    // --- Same bug, asserted as a RED test: this is what a correct implementation
+    // would guarantee. It is EXPECTED TO FAIL against the current code. ---
+    @Test
+    void updateOrder_secondDeliveredCall_shouldNotCreditEarningsAgain() {
+        DriverStats driver = new DriverStats();
+        driver.setUsername("driverA");
+
+        Order order = new Order();
+        order.setId(407L);
+        order.setStatus("Delivered");
+        order.setIsFulfilled(true); // already delivered and paid out once
+        order.setDriver(driver);
+        order.setDeliveryCost(BigDecimal.valueOf(10));
+
+        when(orderRepository.findById(407L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        orderService.updateOrder(407L, "driverA", "Delivered"); // reprocessing an already-fulfilled order
+
+        verify(driverStatsService, never()).updateTotalEarnings(anyString(), any());
+    }
+
+    // --- Use Case #10, Extension 5f: a stale Pick Up reverts an already-delivered order ---
+    @Test
+    void updateOrder_stalePickUp_onAlreadyDeliveredOrder_revertsToUnfulfilled() {
+        DriverStats driver = new DriverStats();
+        driver.setUsername("driverA");
+
+        Order order = new Order();
+        order.setId(406L);
+        order.setStatus("Delivered");
+        order.setIsFulfilled(true); // driver was already paid for this delivery
+        order.setDriver(driver);
+
+        when(orderRepository.findById(406L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        DriverStatsDto statsA = new DriverStatsDto("driverA", 0, BigDecimal.ZERO, BigDecimal.ZERO, 0);
+        when(driverStatsService.getDriverStats("driverA")).thenReturn(statsA);
+
+        try (MockedStatic<DriverStatsMapper> mocked = mockStatic(DriverStatsMapper.class)) {
+            mocked.when(() -> DriverStatsMapper.mapToDriverStats(statsA)).thenReturn(driver);
+
+            OrderDto result = orderService.updateOrder(406L, "driverA", "Picked Up");
+
+            assertEquals("Picked Up", result.getStatus());
+            assertFalse(result.getIsFulfilled(),
+                    "Postcondition (5f): a stale Pick Up silently reverts a delivered order to unfulfilled");
+            // earnings from the original delivery are untouched -- not clawed back either
+            verify(driverStatsService, never()).updateTotalEarnings(anyString(), any());
+        }
+    }
+    // This proves extension 5f: since status != "Delivered", the Pick Up branch falls
+    // into the unfulfilled else-branch, silently reverting a previously delivered order --
+    // while the earnings already credited for it are left in place, with no reconciliation.
+
     @Test
     void getAvailableOrders_and_getActiveOrders_mapResults() {
         Order p1 = new Order(); p1.setId(300L);

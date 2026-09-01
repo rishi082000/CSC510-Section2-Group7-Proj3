@@ -3,8 +3,12 @@ package FoodSeer.controller;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +20,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import FoodSeer.TestUtils;
 import FoodSeer.dto.InventoryDto;
@@ -209,6 +215,54 @@ class OrderControllerTest {
                 .andExpect(status().isGone()); // 410
     }
 
+    @Test
+    @Transactional
+    @WithMockUser(username = "customer", roles = "CUSTOMER")
+    void testFulfillOrder_UseCase6() throws Exception {
+        // --- Preconditions: order exists and is currently unfulfilled ---
+        final List<Food> foods = foodRepository.findAll();
+        final OrderDto orderDto = new OrderDto(0L, "UseCase6Order");
+        orderDto.setFoods(foods.subList(0, 1));
+        final OrderDto savedOrder = orderService.createOrder(orderDto); // owned by "customer"
+
+        assertFalse(orderRepository.findById(savedOrder.getId()).orElseThrow().getIsFulfilled(),
+                "Precondition: order must start unfulfilled");
+
+        // --- Steps 1-2: Staff selects the order and submits a fulfill request ---
+        // 
+        // OrderController.fulfillOrder() is @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CUSTOMER')")
+        // (OrderController.java:85) -- DRIVER is not authorized on this endpoint. Verified by
+        // running this test with roles("DRIVER") first, which the real backend rejected with 403.
+        mvc.perform(post("/api/orders/fulfillOrder")
+                        .with(user("staff").roles("STAFF"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(TestUtils.asJsonString(savedOrder))
+                        .accept(MediaType.APPLICATION_JSON))
+                // --- Steps 3-4: system marks fulfilled, confirms to the actor with 200 ---
+                .andExpect(status().isOk());
+
+        // --- Postcondition 1: the order's status is fulfilled ---
+        assertTrue(orderRepository.findById(savedOrder.getId()).orElseThrow().getIsFulfilled(),
+                "Postcondition: order must be marked fulfilled");
+
+        // --- Postcondition 2: order now appears in /api/orders/fulfilledOrders ---
+        final String fulfilledJson = mvc.perform(get("/api/orders/fulfilledOrders")
+                        .with(user("staff").roles("STAFF")))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        final OrderDto[] fulfilledOrders = new ObjectMapper().readValue(fulfilledJson, OrderDto[].class);
+        assertTrue(Arrays.stream(fulfilledOrders).anyMatch(o -> o.getId().equals(savedOrder.getId())),
+                "Postcondition: fulfilled order must appear in /api/orders/fulfilledOrders");
+
+        // --- Postcondition 3: order appears in the owning customer's /my-orders/fulfilled view ---
+        final String myFulfilledJson = mvc.perform(get("/api/orders/my-orders/fulfilled")
+                        .with(user("customer").roles("CUSTOMER")))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        final OrderDto[] myFulfilledOrders = new ObjectMapper().readValue(myFulfilledJson, OrderDto[].class);
+        assertTrue(Arrays.stream(myFulfilledOrders).anyMatch(o -> o.getId().equals(savedOrder.getId())),
+                "Postcondition: fulfilled order must appear in customer's /my-orders/fulfilled view");
+    }
 
     @Test
     @Transactional

@@ -1,0 +1,41 @@
+Use Case #1 pytest run: Driver Registration and Dashboard Access
+Started: Sat Aug 29 22:15:03 EDT 2026
+API_BASE_URL: http://localhost:8080
+
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.4.2, pluggy-1.6.0 -- /Library/Developer/CommandLineTools/usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/grenzer/Projects/software-engineering/CSC510-Section2-Group7-Proj3
+collecting ... collected 4 items
+
+proj1/tests/test_driver_registration_dashboard_pytest.py::test_register_and_login_as_driver_allows_dashboard_access PASSED [ 25%]
+proj1/tests/test_driver_registration_dashboard_pytest.py::test_rejects_incomplete_driver_registration_information PASSED [ 50%]
+proj1/tests/test_driver_registration_dashboard_pytest.py::test_rejects_driver_login_with_invalid_credentials PASSED [ 75%]
+proj1/tests/test_driver_registration_dashboard_pytest.py::test_rejects_duplicate_driver_email_address FAILED [100%]
+
+=================================== FAILURES ===================================
+_________________ test_rejects_duplicate_driver_email_address __________________
+
+    def test_rejects_duplicate_driver_email_address():
+        """This proves extension 5a: a second account cannot reuse an existing email."""
+        first_driver = unique_driver("first_email_driver")
+        first_status, first_body = api_request("POST", "/auth/register", first_driver)
+        assert first_status == 200, first_body
+    
+        second_driver = unique_driver("second_email_driver")
+        second_driver["email"] = first_driver["email"]
+        second_status, second_body = api_request("POST", "/auth/register", second_driver)
+    
+>       assert second_status == 400, second_body
+E       AssertionError: {'details': 'uri=/auth/register', 'message': "could not execute statement [Duplicate entry 'first_email_driver_fumuvkp_czyu@example.com' for key 'users.UK_6dotkott2kjsp8vw4d0m25fb7'] [insert into users (cost_preference,dietary_restrictions,email,password,role,username) values (?,?,?,?,?,?)]; SQL [insert into users (cost_preference,dietary_restrictions,email,password,role,username) values (?,?,?,?,?,?)]; constraint [users.UK_6dotkott2kjsp8vw4d0m25fb7]", 'timestamp': '2026-08-30T02:15:04.085+00:00'}
+E       assert 500 == 400
+
+proj1/tests/test_driver_registration_dashboard_pytest.py:154: AssertionError
+=========================== short test summary info ============================
+FAILED proj1/tests/test_driver_registration_dashboard_pytest.py::test_rejects_duplicate_driver_email_address - AssertionError: {'details': 'uri=/auth/register', 'message': "could not execute statement [Duplicate entry 'first_email_driver_fumuvkp_czyu@example.com' for key 'users.UK_6dotkott2kjsp8vw4d0m25fb7'] [insert into users (cost_preference,dietary_restrictions,email,password,role,username) values (?,?,?,?,?,?)]; SQL [insert into users (cost_preference,dietary_restrictions,email,password,role,username) values (?,?,?,?,?,?)]; constraint [users.UK_6dotkott2kjsp8vw4d0m25fb7]", 'timestamp': '2026-08-30T02:15:04.085+00:00'}
+assert 500 == 400
+========================= 1 failed, 3 passed in 0.50s ==========================
+
+Finished: Sat Aug 29 22:15:04 EDT 2026
+Exit status: 1
+Output file: /Users/grenzer/Projects/software-engineering/CSC510-Section2-Group7-Proj3/proj1/test-output/driver-registration-dashboard-pytest-20260829-221503.txt

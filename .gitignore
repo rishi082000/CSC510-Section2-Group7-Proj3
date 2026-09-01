@@ -17,3 +17,7 @@
 
 # OS files
 **/.DS_Store
+proj1/test-output/
+proj1/.venv/
+proj1/tests/.pytest_cache/
+proj1/tests/__pycache__/
